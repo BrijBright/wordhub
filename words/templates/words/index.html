@@ -1,0 +1,23 @@
+<head>
+  <!-- ...existing head content... -->
+  <style>
+    /* highlight any Bootstrap row on hover */
+    .row:hover {
+      background-color: var(--bs-primary) !important; /* Bootstrap 5 primary */
+      color: var(--bs-white, #fff) !important;
+      transition: background-color 0.15s ease;
+    }
+  </style>
+  <!-- ...existing head content... -->
+</head>
+<body>
+  <!-- ...existing body content... -->
+  <!-- Optional JS fallback to add Bootstrap classes instead of CSS rules -->
+  <script>
+    document.querySelectorAll('.row').forEach(el => {
+      el.addEventListener('mouseenter', () => el.classList.add('bg-primary', 'text-white'));
+      el.addEventListener('mouseleave', () => el.classList.remove('bg-primary', 'text-white'));
+    });
+  </script>
+  <!-- ...existing body content... -->
+</body>

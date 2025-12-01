@@ -125,3 +125,8 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// document.querySelectorAll('.row').forEach(el => {
+//     el.addEventListener('mouseenter', () => el.classList.add('bg-primary', 'text-white'));
+//     el.addEventListener('mouseleave', () => el.classList.remove('bg-primary', 'text-white'));
+// });

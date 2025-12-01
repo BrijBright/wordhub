@@ -1,3 +1,11 @@
 body {
     background-color: #f7f7f7;
 }
+
+/* Highlight table row on hover */
+table.table tbody tr.row-hover:hover>* {
+    background-color: rgba(13, 110, 253, 0.12) !important;
+    /* soft elegant hover */
+    color: #000 !important;
+    transition: background-color 0.15s ease;
+}

@@ -54,7 +54,7 @@
                 </thead>
                 <tbody>
                     {% for word in words %}
-                    <tr data-word-id="{{ word.id }}">
+                    <tr class="row-hover" data-word-id="{{ word.id }}">
                         <th>{{ forloop.counter }}</th>
                         <td class="word-cell" {% if word.meaning %} data-bs-toggle="tooltip" title="{{ word.meaning }}"
                             {% endif %}>
