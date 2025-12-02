@@ -104,7 +104,7 @@ def mark_improvement(request, pk):
 
 def improvement_list(request):
     words = Word.objects.filter(need_improvement=True)
-    return render(request, "words/improvement_list.html", {"words": words})
+    return render(request, "index.html", {"words": words})
 
 
 @csrf_exempt
@@ -127,4 +127,4 @@ def toggle_mastered(request, pk):
 
 def mastered_list(request):
     words = Word.objects.filter(is_mastered=True)
-    return render(request, "words/mastered_list.html", {"words": words})
+    return render(request, "index.html", {"words": words})
