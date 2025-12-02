@@ -62,10 +62,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ---------------- MARK REVISED ----------------
+    // Event listener for "Mark Revised"
     document.querySelectorAll('.mark-revised-icon').forEach(icon => {
         icon.addEventListener('click', () => {
-            handleWordAction(icon, 'mark_revised', { increment: 1 }, 'bi-check-square-fill');
+            const row = icon.closest('tr');
+            const wordId = row.getAttribute('data-word-id');
+            const countCell = row.querySelector('.revised-count');
+
+            // Increment revised count in UI
+            let count = parseInt(countCell.textContent);
+            count += 1;
+            countCell.textContent = count;
+
+            // Optionally animate icon
+            icon.classList.add('bi-check-square-fill');  // filled check
+            setTimeout(() => icon.classList.remove('bi-check-square-fill'), 500);
+
+            // Update DB via AJAX
+            fetch(`/api/words/${wordId}/mark_revised/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ increment: 1 })
+            })
+                .then(res => res.json())
+                .then(data => console.log('Updated:', data))
+                .catch(err => console.error(err));
         });
     });
 
