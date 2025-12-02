@@ -83,3 +83,48 @@ def add_words_api(request):
 def add_words_page(request):
     # Just render the add_words.html template
     return render(request, "add_words.html")
+
+
+@csrf_exempt
+def mark_improvement(request, pk):
+    if request.method == 'POST':
+        try:
+            word = Word.objects.get(pk=pk)
+            # Toggle the current value
+            word.need_improvement = not word.need_improvement
+            word.save()
+            
+            return JsonResponse({
+                'success': True,
+                'need_improvement': word.need_improvement
+            })
+        except Word.DoesNotExist:
+            return JsonResponse({'error': 'Word not found'}, status=404)
+    return JsonResponse({'error': 'Invalid method'}, status=400)
+
+def improvement_list(request):
+    words = Word.objects.filter(need_improvement=True)
+    return render(request, "words/improvement_list.html", {"words": words})
+
+
+@csrf_exempt
+def toggle_mastered(request, pk):
+    if request.method == 'POST':
+        try:
+            word = Word.objects.get(pk=pk)
+            # Toggle the current value
+            word.is_mastered = not word.is_mastered
+            word.save()
+            
+            return JsonResponse({
+                'success': True,
+                'is_mastered': word.is_mastered
+            })
+        except Word.DoesNotExist:
+            return JsonResponse({'error': 'Word not found'}, status=404)
+    return JsonResponse({'error': 'Invalid method'}, status=400)
+
+
+def mastered_list(request):
+    words = Word.objects.filter(is_mastered=True)
+    return render(request, "words/mastered_list.html", {"words": words})

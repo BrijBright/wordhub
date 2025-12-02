@@ -19,19 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const text = row.querySelector('.copy-text');
 
             navigator.clipboard.writeText(word).then(() => {
-                // 1. Change icon → tick
                 icon.classList.remove('bi-copy');
                 icon.classList.add('bi-check');
-
-                // 2. Show "Copied!" text
                 text.style.visibility = 'visible';
-
-                // 3. Animate word cell (highlight)
                 const wordCell = row.querySelectorAll('td')[0];
                 wordCell.classList.add('copy-highlight');
                 setTimeout(() => wordCell.classList.remove('copy-highlight'), 800);
-
-                // 4. Revert icon and text
                 setTimeout(() => {
                     icon.classList.remove('bi-check');
                     icon.classList.add('bi-copy');
@@ -48,16 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const word = row.querySelectorAll('td')[0].textContent.trim();
             const url = `https://youglish.com/pronounce/${encodeURIComponent(word)}/english`;
 
-            // Animate icon
             icon.classList.add('speak-animate');
             setTimeout(() => icon.classList.remove('speak-animate'), 500);
 
-            // Highlight word cell
             const wordCell = row.querySelectorAll('td')[0];
             wordCell.classList.add('copy-highlight');
             setTimeout(() => wordCell.classList.remove('copy-highlight'), 800);
 
-            // Open YouGlish in new tab
             window.open(url, '_blank', 'noopener,noreferrer');
         });
     });
@@ -72,61 +62,127 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-});
-
-
-document.addEventListener('DOMContentLoaded', () => {
-
-    // Event listener for "Mark Revised"
+    // ---------------- MARK REVISED ----------------
     document.querySelectorAll('.mark-revised-icon').forEach(icon => {
+        icon.addEventListener('click', () => {
+            handleWordAction(icon, 'mark_revised', { increment: 1 }, 'bi-check-square-fill');
+        });
+    });
+
+    // ---------------- MARK NEEDS IMPROVEMENT ----------------
+    document.querySelectorAll('.improvement-icon').forEach(icon => {
         icon.addEventListener('click', () => {
             const row = icon.closest('tr');
             const wordId = row.getAttribute('data-word-id');
-            const countCell = row.querySelector('.revised-count');
 
-            // Increment revised count in UI
-            let count = parseInt(countCell.textContent);
-            count += 1;
-            countCell.textContent = count;
-
-            // Optionally animate icon
-            icon.classList.add('bi-check-square-fill');  // filled check
-            setTimeout(() => icon.classList.remove('bi-check-square-fill'), 500);
+            // Toggle icon fill and color
+            if (icon.classList.contains('bi-exclamation-triangle-fill')) {
+                // Already filled → unfill
+                icon.classList.remove('bi-exclamation-triangle-fill');
+                icon.classList.add('bi-exclamation-triangle'); // outline
+                // icon.style.color = ''; // reset
+            } else {
+                // Fill the icon
+                icon.classList.remove('bi-exclamation-triangle');
+                icon.classList.add('bi-exclamation-triangle-fill');
+                icon.style.color = 'orange';
+            }
 
             // Update DB via AJAX
-            fetch(`/api/words/${wordId}/mark_revised/`, {
+            fetch(`/api/words/${wordId}/mark_improvement/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken')
                 },
-                body: JSON.stringify({ increment: 1 })
+                body: JSON.stringify({ improvement: true }) // or false if unchecking
             })
                 .then(res => res.json())
-                .then(data => console.log('Updated:', data))
+                .then(data => console.log('Updated improvement:', data))
                 .catch(err => console.error(err));
         });
     });
 
-});
 
-// CSRF helper
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
-                break;
+    // ----------------MARK MASTERED----------------
+    document.querySelectorAll('.mastered-icon').forEach(icon => {
+        icon.addEventListener('click', () => {
+            const row = icon.closest('tr');
+            const wordId = row.getAttribute('data-word-id');
+
+            // Toggle icon fill and color
+            if (icon.classList.contains('bi-star-fill')) {
+                // Already filled → unfill
+                icon.classList.remove('bi-star-fill');
+                icon.classList.add('bi-star'); // outline
+            } else {
+                // Fill the icon
+                icon.classList.remove('bi-star');
+                icon.classList.add('bi-star-fill');
+                icon.style.color = 'gold';
+            }
+
+            // Update DB via AJAX
+            fetch(`/api/words/${wordId}/toggle_mastered/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({}) // no extra data needed; backend toggles
+            })
+                .then(res => res.json())
+                .then(data => console.log('Updated mastered:', data))
+                .catch(err => console.error(err));
+        });
+    });
+
+
+    // ---------------- GENERIC WORD ACTION HANDLER ----------------
+    function handleWordAction(icon, action, payload = {}, highlightClass = '', highlightColor = '') {
+        const row = icon.closest('tr');
+        const wordId = row.getAttribute('data-word-id');
+
+        // Animate icon if highlightClass is provided
+        if (highlightClass) {
+            icon.classList.add(highlightClass);
+            setTimeout(() => icon.classList.remove(highlightClass), 500);
+        }
+
+        // Optional: change color temporarily
+        if (highlightColor) {
+            const originalColor = icon.style.color;
+            icon.style.color = highlightColor;
+            setTimeout(() => icon.style.color = originalColor, 800);
+        }
+
+        // Send POST request to backend API
+        fetch(`/api/words/${wordId}/${action}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(payload)
+        })
+            .then(res => res.json())
+            .then(data => console.log(`${action} success:`, data))
+            .catch(err => console.error(err));
+    }
+
+    // ---------------- CSRF HELPER ----------------
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
-
-// document.querySelectorAll('.row').forEach(el => {
-//     el.addEventListener('mouseenter', () => el.classList.add('bg-primary', 'text-white'));
-//     el.addEventListener('mouseleave', () => el.classList.remove('bg-primary', 'text-white'));
-// });
+});

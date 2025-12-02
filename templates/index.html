@@ -29,6 +29,9 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'add_words_page' %}">Add Words</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'improvement_list' %}">Improvement Needed</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'mastered_list' %}">Mastered Words</a></li>
                     <li class="nav-item"><a class="nav-link" href="#">About</a></li>
                     <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
                 </ul>
@@ -49,6 +52,8 @@
                         <th>Definition</th>
                         <th>Copy</th>
                         <th>Mark Revised</th>
+                        <th>Needs Improvement</th>
+                        <th>Mastered</th>
                         <th>Revised Count</th>
                     </tr>
                 </thead>
@@ -69,14 +74,29 @@
                         <td>
                             <i class="bi bi-check-square mark-revised-icon" style="cursor:pointer; color: green;"></i>
                         </td>
+                        <!-- New action icons -->
+                        <td>
+                            <i class="bi 
+        {% if word.need_improvement %}bi-exclamation-triangle-fill{% else %}bi-exclamation-triangle{% endif %} 
+        improvement-icon" style="cursor:pointer; color: orange;" title="Mark as Needs Improvement">
+                            </i>
+                        </td>
+
+                        <td>
+                            <i class="bi 
+        {% if word.is_mastered %}bi-star-fill{% else %}bi-star{% endif %} 
+        mastered-icon" style="cursor:pointer; color: gold;" title="Mark as Mastered">
+                            </i>
+                        </td>
+
                         <td class="revised-count">{{ word.revised_count }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
-
             </table>
         </div>
     </main>
+
 
     <!-- ===== Footer ===== -->
     <footer class="bg-dark text-white text-center py-3">
