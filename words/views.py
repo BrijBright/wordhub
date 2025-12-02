@@ -12,8 +12,8 @@ def word_list(request):
 
 
 def index(request):
-    # Order by revised_count ascending (lowest first)
-    words = Word.objects.all().order_by('revised_count')
+    # Get all words where is_mastered is False
+    words = Word.objects.exclude(is_mastered=True).order_by('revised_count')
     return render(request, 'index.html', {'words': words})
 
 
