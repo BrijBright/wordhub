@@ -90,17 +90,30 @@ def mark_improvement(request, pk):
     if request.method == 'POST':
         try:
             word = Word.objects.get(pk=pk)
-            # Toggle the current value
+
+            # Toggle need_improvement
             word.need_improvement = not word.need_improvement
+
+            # If need_improvement becomes True → force mastered False
+            if word.need_improvement:
+                word.is_mastered = False
+
             word.save()
-            
+
             return JsonResponse({
                 'success': True,
-                'need_improvement': word.need_improvement
+                'need_improvement': word.need_improvement,
+                'is_mastered': word.is_mastered
             })
+
         except Word.DoesNotExist:
             return JsonResponse({'error': 'Word not found'}, status=404)
+
     return JsonResponse({'error': 'Invalid method'}, status=400)
+
+
+
+
 
 def improvement_list(request):
     words = Word.objects.filter(need_improvement=True)
@@ -112,17 +125,27 @@ def toggle_mastered(request, pk):
     if request.method == 'POST':
         try:
             word = Word.objects.get(pk=pk)
-            # Toggle the current value
+
+            # Toggle is_mastered
             word.is_mastered = not word.is_mastered
+
+            # If mastered becomes True -> force need_improvement = False
+            if word.is_mastered:
+                word.need_improvement = False
+
             word.save()
-            
+
             return JsonResponse({
                 'success': True,
-                'is_mastered': word.is_mastered
+                'is_mastered': word.is_mastered,
+                'need_improvement': word.need_improvement
             })
+
         except Word.DoesNotExist:
             return JsonResponse({'error': 'Word not found'}, status=404)
+
     return JsonResponse({'error': 'Invalid method'}, status=400)
+
 
 
 def mastered_list(request):

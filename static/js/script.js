@@ -74,65 +74,77 @@ document.addEventListener('DOMContentLoaded', () => {
         icon.addEventListener('click', () => {
             const row = icon.closest('tr');
             const wordId = row.getAttribute('data-word-id');
+            const masteredIcon = row.querySelector('.mastered-icon');
 
-            // Toggle icon fill and color
-            if (icon.classList.contains('bi-exclamation-triangle-fill')) {
-                // Already filled → unfill
+            const isActive = icon.classList.contains('bi-exclamation-triangle-fill');
+
+            // --- TOGGLE UI ---
+            if (isActive) {
+                // Turning OFF
                 icon.classList.remove('bi-exclamation-triangle-fill');
-                icon.classList.add('bi-exclamation-triangle'); // outline
-                // icon.style.color = ''; // reset
+                icon.classList.add('bi-exclamation-triangle');
             } else {
-                // Fill the icon
+                // Turning ON
                 icon.classList.remove('bi-exclamation-triangle');
                 icon.classList.add('bi-exclamation-triangle-fill');
-                icon.style.color = 'orange';
+
+                // Turn OFF mastered if on
+                masteredIcon.classList.remove('bi-star-fill');
+                masteredIcon.classList.add('bi-star');
             }
 
-            // Update DB via AJAX
+            // --- SEND TO BACKEND ---
             fetch(`/api/words/${wordId}/mark_improvement/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken')
                 },
-                body: JSON.stringify({ improvement: true }) // or false if unchecking
+                body: JSON.stringify({})
             })
                 .then(res => res.json())
-                .then(data => console.log('Updated improvement:', data))
+                .then(data => console.log("Improvement updated:", data))
                 .catch(err => console.error(err));
         });
     });
 
 
-    // ----------------MARK MASTERED----------------
+
+    // ---------------- MARK MASTERED ----------------
     document.querySelectorAll('.mastered-icon').forEach(icon => {
         icon.addEventListener('click', () => {
             const row = icon.closest('tr');
             const wordId = row.getAttribute('data-word-id');
+            const improvementIcon = row.querySelector('.improvement-icon');
 
-            // Toggle icon fill and color
-            if (icon.classList.contains('bi-star-fill')) {
-                // Already filled → unfill
+            const isActive = icon.classList.contains('bi-star-fill');
+
+            // --- TOGGLE UI ---
+            if (isActive) {
+                // Turning OFF
                 icon.classList.remove('bi-star-fill');
-                icon.classList.add('bi-star'); // outline
+                icon.classList.add('bi-star');
             } else {
-                // Fill the icon
+                // Turning ON
                 icon.classList.remove('bi-star');
                 icon.classList.add('bi-star-fill');
-                icon.style.color = 'gold';
+
+                // Turn OFF improvement if ON
+                improvementIcon.classList.remove('bi-exclamation-triangle-fill');
+                improvementIcon.classList.add('bi-exclamation-triangle');
             }
 
-            // Update DB via AJAX
+            // --- SEND TO BACKEND ---
             fetch(`/api/words/${wordId}/toggle_mastered/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken')
                 },
-                body: JSON.stringify({}) // no extra data needed; backend toggles
+                body: JSON.stringify({})
             })
                 .then(res => res.json())
-                .then(data => console.log('Updated mastered:', data))
+                .then(data => console.log("Mastered updated:", data))
                 .catch(err => console.error(err));
         });
     });

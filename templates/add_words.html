@@ -14,6 +14,7 @@
 </head>
 
 <body class="bg-light">
+    <!-- ===== Navbar ===== -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">WordHub</a>
@@ -25,12 +26,16 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'add_words_page' %}">Add Words</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'improvement_list' %}">Improvement Needed</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'mastered_list' %}">Mastered Words</a></li>
                     <li class="nav-item"><a class="nav-link" href="#">About</a></li>
                     <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
                 </ul>
             </div>
         </div>
     </nav>
+
 
     <div class="container py-5">
         <div class="card shadow-lg p-4">
