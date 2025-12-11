@@ -7,14 +7,28 @@ import json
 
 
 def word_list(request):
-    words = Word.objects.all().values('id', 'word', 'meaning')
+    words = Word.objects.all().values(
+        'id', 'word', 'meaning', 
+        'category__name', 'subcategory__name'
+    )
     return JsonResponse(list(words), safe=False)
 
 
+
 def index(request):
-    # Get all words where is_mastered is False
+    # Optionally, filter by category or subcategory via GET parameters
+    category_id = request.GET.get('category')
+    subcategory_id = request.GET.get('subcategory')
+
     words = Word.objects.exclude(is_mastered=True).order_by('revised_count')
+
+    if category_id:
+        words = words.filter(category_id=category_id)
+    if subcategory_id:
+        words = words.filter(subcategory_id=subcategory_id)
+
     return render(request, 'index.html', {'words': words})
+
 
 
 
@@ -39,11 +53,29 @@ def add_words_api(request):
     try:
         data = json.loads(request.body)
         text = data.get("text", "")
+        category_id = data.get("category")  # required
+        subcategory_id = data.get("subcategory")  # optional
     except:
         return JsonResponse({"message": "Invalid JSON"}, status=400)
 
     if not text.strip():
         return JsonResponse({"message": "No data provided"}, status=400)
+
+    # Check if category exists
+    from .models import Category, Subcategory
+    try:
+        category = Category.objects.get(id=category_id)
+    except Category.DoesNotExist:
+        return JsonResponse({"message": "Category not found"}, status=400)
+
+    subcategory = None
+    if subcategory_id:
+        try:
+            subcategory = Subcategory.objects.get(id=subcategory_id)
+            if subcategory.category != category:
+                return JsonResponse({"message": "Subcategory does not belong to the category"}, status=400)
+        except Subcategory.DoesNotExist:
+            return JsonResponse({"message": "Subcategory not found"}, status=400)
 
     # Split by ;
     entries = [e.strip() for e in text.split(";") if e.strip()]
@@ -53,21 +85,23 @@ def add_words_api(request):
 
     for item in entries:
         if "," in item:
-            # Format: word,meaning
-            parts = item.split(",", 1)  # only split first comma
-            word = parts[0].strip()
+            parts = item.split(",", 1)
+            word_text = parts[0].strip()
             meaning = parts[1].strip()
         else:
-            # Format: only word
-            word = item
+            word_text = item
             meaning = None
 
-        if not word:
+        if not word_text:
             continue
 
         obj, created = Word.objects.get_or_create(
-            word=word,
-            defaults={"meaning": meaning}
+            word=word_text,
+            defaults={
+                "meaning": meaning,
+                "category": category,
+                "subcategory": subcategory
+            }
         )
 
         if not created:
@@ -116,8 +150,27 @@ def mark_improvement(request, pk):
 
 
 def improvement_list(request):
+    category_id = request.GET.get('category')
+    subcategory_id = request.GET.get('subcategory')
+
     words = Word.objects.filter(need_improvement=True)
+
+    # Optional category filter
+    if category_id:
+        if category_id.lower() == 'null':
+            words = words.filter(category__isnull=True)
+        else:
+            words = words.filter(category_id=category_id)
+
+    # Optional subcategory filter
+    if subcategory_id:
+        if subcategory_id.lower() == 'null':
+            words = words.filter(subcategory__isnull=True)
+        else:
+            words = words.filter(subcategory_id=subcategory_id)
+
     return render(request, "index.html", {"words": words})
+
 
 
 @csrf_exempt
@@ -149,5 +202,23 @@ def toggle_mastered(request, pk):
 
 
 def mastered_list(request):
+    category_id = request.GET.get('category')
+    subcategory_id = request.GET.get('subcategory')
+
     words = Word.objects.filter(is_mastered=True)
+
+    # Optional category filter
+    if category_id:
+        if category_id.lower() == 'null':
+            words = words.filter(category__isnull=True)
+        else:
+            words = words.filter(category_id=category_id)
+
+    # Optional subcategory filter
+    if subcategory_id:
+        if subcategory_id.lower() == 'null':
+            words = words.filter(subcategory__isnull=True)
+        else:
+            words = words.filter(subcategory_id=subcategory_id)
+
     return render(request, "index.html", {"words": words})
