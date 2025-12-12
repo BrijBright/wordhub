@@ -2,9 +2,8 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from .models import Word
 from django.views.decorators.csrf import csrf_exempt
+from .models import Word, Category, Subcategory
 import json
-
-
 
 def word_list(request):
     words = Word.objects.all().values(
@@ -15,8 +14,8 @@ def word_list(request):
 
 
 
+
 def index(request):
-    # Optionally, filter by category or subcategory via GET parameters
     category_id = request.GET.get('category')
     subcategory_id = request.GET.get('subcategory')
 
@@ -27,7 +26,16 @@ def index(request):
     if subcategory_id:
         words = words.filter(subcategory_id=subcategory_id)
 
-    return render(request, 'index.html', {'words': words})
+    context = {
+        'words': words,
+        'categories': Category.objects.all(),
+        'subcategories': Subcategory.objects.all(),
+        'active_category': int(category_id) if category_id else None,
+        'active_subcategory': int(subcategory_id) if subcategory_id else None,
+    }
+    return render(request, 'index.html', context)
+
+
 
 
 
@@ -43,7 +51,6 @@ def mark_revised(request, word_id):
         return JsonResponse({'revised_count': word.revised_count})
 
 
-# app/views.py
 
 @csrf_exempt
 def add_words_api(request):
@@ -52,32 +59,126 @@ def add_words_api(request):
 
     try:
         data = json.loads(request.body)
-        text = data.get("text", "")
-        category_id = data.get("category")  # required
-        subcategory_id = data.get("subcategory")  # optional
+        text = data.get("text", "").strip()
+
+        category_id = data.get("category")
+        subcategory_id = data.get("subcategory")
+
+        new_category = data.get("newCategory", "").strip()
+        new_subcategory = data.get("newSubcategory", "").strip()
+
     except:
         return JsonResponse({"message": "Invalid JSON"}, status=400)
 
-    if not text.strip():
+    if not text:
         return JsonResponse({"message": "No data provided"}, status=400)
 
-    # Check if category exists
-    from .models import Category, Subcategory
-    try:
-        category = Category.objects.get(id=category_id)
-    except Category.DoesNotExist:
-        return JsonResponse({"message": "Category not found"}, status=400)
+    # --- CATEGORY HANDLING ---
+    if new_category:
+        category, _ = Category.objects.get_or_create(name=new_category)
+    elif category_id:
+        try:
+            category = Category.objects.get(id=category_id)
+        except Category.DoesNotExist:
+            return JsonResponse({"message": "Category not found"}, status=400)
+    else:
+        return JsonResponse({"message": "Category is required"}, status=400)
 
+    # --- SUBCATEGORY HANDLING ---
     subcategory = None
-    if subcategory_id:
+
+    if new_subcategory:
+        subcategory, _ = Subcategory.objects.get_or_create(
+            name=new_subcategory,
+            category=category
+        )
+    elif subcategory_id:
         try:
             subcategory = Subcategory.objects.get(id=subcategory_id)
             if subcategory.category != category:
-                return JsonResponse({"message": "Subcategory does not belong to the category"}, status=400)
+                return JsonResponse({
+                    "message": "Subcategory does not belong to the selected category"
+                }, status=400)
         except Subcategory.DoesNotExist:
             return JsonResponse({"message": "Subcategory not found"}, status=400)
 
-    # Split by ;
+    # --- PROCESS BULK TEXT ---
+    entries = [e.strip() for e in text.split(";") if e.strip()]
+
+    added = 0
+    skipped = 0
+
+    for item in entries:
+        if "," in item:
+            word_text, meaning = item.split(",", 1)
+            word_text = word_text.strip()
+            meaning = meaning.strip()
+        else:
+            word_text = item
+            meaning = None
+
+        if not word_text:
+            continue
+
+        obj, created = Word.objects.get_or_create(
+            word=word_text,
+            defaults={
+                "meaning": meaning,
+                "category": category,
+                "subcategory": subcategory,
+            }
+        )
+
+        if created:
+            added += 1
+        else:
+            skipped += 1
+
+    return JsonResponse({
+        "message": f"Added {added} words, skipped {skipped} duplicates."
+    })
+
+    if request.method != "POST":
+        return JsonResponse({"message": "Invalid request"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        text = data.get("text", "").strip()
+        category_id = data.get("category")        # selected existing category
+        subcategory_id = data.get("subcategory")  # selected existing subcategory
+        new_category = data.get("newCategory", "").strip()      # new category input
+        new_subcategory = data.get("newSubcategory", "").strip()  # new subcategory input
+    except:
+        return JsonResponse({"message": "Invalid JSON"}, status=400)
+
+    if not text:
+        return JsonResponse({"message": "No data provided"}, status=400)
+
+    # Handle category
+    if new_category:
+        category, _ = Category.objects.get_or_create(name=new_category)
+    elif category_id:
+        try:
+            category = Category.objects.get(id=category_id)
+        except Category.DoesNotExist:
+            return JsonResponse({"message": "Category not found"}, status=400)
+    else:
+        return JsonResponse({"message": "Category is required"}, status=400)
+
+    # Handle subcategory
+    subcategory = None
+    if new_subcategory:
+        # Create new subcategory linked to selected/created category
+        subcategory, _ = Subcategory.objects.get_or_create(name=new_subcategory, category=category)
+    elif subcategory_id:
+        try:
+            subcategory = Subcategory.objects.get(id=subcategory_id)
+            if subcategory.category != category:
+                return JsonResponse({"message": "Subcategory does not belong to the selected category"}, status=400)
+        except Subcategory.DoesNotExist:
+            return JsonResponse({"message": "Subcategory not found"}, status=400)
+
+    # Split bulk words by ;
     entries = [e.strip() for e in text.split(";") if e.strip()]
 
     added = 0
@@ -104,19 +205,23 @@ def add_words_api(request):
             }
         )
 
-        if not created:
-            skipped += 1
-        else:
+        if created:
             added += 1
+        else:
+            skipped += 1
 
     return JsonResponse({
         "message": f"Added {added} words, skipped {skipped} duplicates."
     })
 
-
 def add_words_page(request):
-    # Just render the add_words.html template
-    return render(request, "add_words.html")
+    categories = Category.objects.all()
+    subcategories = Subcategory.objects.all()
+
+    return render(request, "add_words.html", {
+        "categories": categories,
+        "subcategories": subcategories
+    })
 
 
 @csrf_exempt
