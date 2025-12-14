@@ -21,19 +21,31 @@ def index(request):
 
     words = Word.objects.exclude(is_mastered=True).order_by('revised_count')
 
+    # Step 1: filter words by category
     if category_id:
         words = words.filter(category_id=category_id)
+
+    # Step 2: filter words by subcategory (only if selected)
     if subcategory_id:
         words = words.filter(subcategory_id=subcategory_id)
+
+    # Step 3: filter subcategories list
+    if category_id:
+        subcategories = Subcategory.objects.filter(category_id=category_id)
+    else:
+        subcategories = Subcategory.objects.none()
 
     context = {
         'words': words,
         'categories': Category.objects.all(),
-        'subcategories': Subcategory.objects.all(),
+        'subcategories': subcategories,
         'active_category': int(category_id) if category_id else None,
         'active_subcategory': int(subcategory_id) if subcategory_id else None,
     }
+
     return render(request, 'index.html', context)
+
+
 
 
 
